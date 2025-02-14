@@ -5,9 +5,11 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"merch-shop/internal/handler"
-	"merch-shop/internal/model"
-	"merch-shop/internal/repo"
+	"log"
+	"merch-shop/internal/handlers"
+	"merch-shop/internal/models"
+	"merch-shop/internal/repositories"
+	"merch-shop/internal/services"
 	"net/http"
 	"os"
 )
@@ -24,18 +26,26 @@ func main() {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		host, user, password, dbname, port)
 
-	fmt.Println(dsn)
-
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect to database")
+		log.Fatalf("failed to connect to database: %v", err)
 	}
-	repo.DB = db
-	db.AutoMigrate(&model.User{})
+
+	// Автоматическая миграция
+	if err = db.AutoMigrate(&models.User{}); err != nil {
+		log.Println("failed to auto migrate: %w", err)
+	}
+
+	userRepo := repositories.NewUserRepo(db)
+	//merchRepo := repositories.NewMerchRepo(db)
+	userService := services.NewUserService(userRepo)
+	//merchService := services.NewMerchService(merchRepo)
+	userHandler := handlers.NewUserHandler(userService)
+	//shopHandler := handlers.NewShopHandler(userService, merchService)
 
 	// Инициализация роутеров
 	r := mux.NewRouter()
-	r.HandleFunc("/api/auth", handler.Authenticate).Methods("POST")
+	r.HandleFunc("/api/auth", userHandler.Authenticate).Methods("POST")
 
 	http.ListenAndServe(":8080", r)
 }

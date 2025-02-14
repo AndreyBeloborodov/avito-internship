@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"merch-shop/internal/errs"
 	"merch-shop/internal/models"
 	"merch-shop/internal/services"
 	"net/http"
@@ -17,20 +19,19 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 
 // Authenticate - обработчик аутентификации
 func (h *UserHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
-	var req models.AuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var authReq models.AuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&authReq); err != nil {
 		writeErrorResponse(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	authReq := models.AuthRequest{
-		Username: req.Username,
-		Password: req.Password,
-	}
-
 	resp, err := h.userService.Authenticate(&authReq)
+	if errors.Is(err, errs.ErrInvalidPassword) {
+		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
+		writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

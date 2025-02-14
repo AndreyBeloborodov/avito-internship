@@ -35,3 +35,8 @@ type CoinTransaction struct {
 	ToUser   string `json:"toUser,omitempty"`   // Получатель (если монеты отправлены)
 	Amount   int    `json:"amount"`             // Количество монет
 }
+
+type CustomHttpError struct {
+	errorCode int
+	massage   string
+}

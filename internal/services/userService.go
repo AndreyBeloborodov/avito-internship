@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+	"merch-shop/internal/errs"
 	"merch-shop/internal/models"
 	"merch-shop/internal/repositories"
 	"net/http"
@@ -40,7 +41,7 @@ func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthRespons
 	} else {
 		// Если пользователь найден, проверяем пароль
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-			return nil, errors.New("invalid password")
+			return nil, errs.ErrInvalidPassword
 		}
 	}
 
@@ -107,7 +108,7 @@ func (s *UserService) ExtractUsernameFromToken(r *http.Request) (string, error) 
 	// Проверяем, существует ли пользователь в БД
 	user, err := s.userRepo.GetUserByUsername(username)
 	if err != nil || user == nil {
-		return "", errors.New("user not found")
+		return "", errs.ErrUserNotFound
 	}
 
 	// Токен валиден, пользователь существует
@@ -117,9 +118,35 @@ func (s *UserService) ExtractUsernameFromToken(r *http.Request) (string, error) 
 // BuyMerch - обработка покупки предмета
 func (s *UserService) BuyMerch(username string, merch *models.Merch) error {
 	user, err := s.userRepo.GetUserByUsername(username)
-	if err != nil {
-		return err
+	if err != nil || user == nil {
+		return errs.ErrUserNotFound
+	}
+	// Проверяем, хватает ли монет
+	if user.Coins < merch.Price {
+		return errs.ErrNotEnoughCoins
 	}
 	// Покупаем предмет
 	return s.userRepo.BuyMerch(user, merch)
+}
+
+// SendCoin - обработка отправки монет другому пользователю
+func (s *UserService) SendCoin(username string, req models.SendCoinRequest) error {
+	fromUser, err := s.userRepo.GetUserByUsername(username)
+	if err != nil || fromUser == nil {
+		return errs.ErrUserNotFound
+	}
+	toUser, err := s.userRepo.GetUserByUsername(req.ToUser)
+	if err != nil || toUser == nil {
+		return errs.ErrUserNotFound
+	}
+	// проверяем что количество монет положительное
+	if req.Amount <= 0 {
+		return errs.ErrNegativeCoins
+	}
+	// Проверяем, хватает ли монет у отправителя
+	if fromUser.Coins < req.Amount {
+		return errs.ErrNotEnoughCoins
+	}
+	// оправляем монеты
+	return s.userRepo.SendCoin(fromUser, toUser, req.Amount)
 }

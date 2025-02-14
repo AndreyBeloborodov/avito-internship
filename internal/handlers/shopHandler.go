@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"log"
 	"merch-shop/internal/errs"
 	"merch-shop/internal/models"
 	"merch-shop/internal/services"
@@ -51,6 +52,7 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Println("failed to buy merch: ", err)
 		return
 	}
 
@@ -89,6 +91,7 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		log.Println("failed to send coins: ", err)
 		return
 	}
 

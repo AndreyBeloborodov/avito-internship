@@ -34,7 +34,7 @@ func main() {
 
 	// Автоматическая миграция
 	if err = db.AutoMigrate(&models.User{}, &models.Merch{}, &models.Purchase{}, models.Transaction{}); err != nil {
-		log.Println("failed to auto migrate: %w", err)
+		log.Println("failed to auto migrate: ", err)
 	}
 
 	userRepo := repositories.NewUserRepo(db)

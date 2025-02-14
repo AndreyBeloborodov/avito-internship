@@ -44,7 +44,15 @@ func (r *UserRepo) BuyMerch(user *models.User, merch *models.Merch) error {
 			return err
 		}
 
-		//TODO Добавляем предмет в инвентарь
+		// Добавляем предмет в инвентарь (запись в purchases)
+		purchase := models.Purchase{
+			UserID:  user.ID,
+			MerchID: merch.ID,
+		}
+
+		if err := tx.Create(&purchase).Error; err != nil {
+			return err
+		}
 
 		return nil
 	})

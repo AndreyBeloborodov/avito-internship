@@ -60,18 +60,14 @@ func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthRespons
 
 // ExtractUsernameFromToken разбирает токен, проверяет его валидность и возвращает username
 func (s *UserService) ExtractUsernameFromToken(r *http.Request) (string, error) {
+
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "", errors.New("missing Authorization header")
 	}
 
 	// Ожидаем формат "Bearer <token>"
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		return "", errors.New("invalid Authorization header format")
-	}
-
-	tokenString := parts[1]
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 	// Разбираем токен и проверяем подпись
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {

@@ -25,6 +25,7 @@ func main() {
 	// Формируем DSN
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		host, user, password, dbname, port)
+	fmt.Println(dsn)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -32,20 +33,21 @@ func main() {
 	}
 
 	// Автоматическая миграция
-	if err = db.AutoMigrate(&models.User{}); err != nil {
+	if err = db.AutoMigrate(&models.User{}, &models.Merch{}); err != nil {
 		log.Println("failed to auto migrate: %w", err)
 	}
 
 	userRepo := repositories.NewUserRepo(db)
-	//merchRepo := repositories.NewMerchRepo(db)
+	merchRepo := repositories.NewMerchRepo(db)
 	userService := services.NewUserService(userRepo)
-	//merchService := services.NewMerchService(merchRepo)
+	merchService := services.NewMerchService(merchRepo)
 	userHandler := handlers.NewUserHandler(userService)
-	//shopHandler := handlers.NewShopHandler(userService, merchService)
+	shopHandler := handlers.NewShopHandler(userService, merchService)
 
 	// Инициализация роутеров
 	r := mux.NewRouter()
 	r.HandleFunc("/api/auth", userHandler.Authenticate).Methods("POST")
+	r.HandleFunc("/api/buy/{item}", shopHandler.BuyItem).Methods("GET")
 
 	http.ListenAndServe(":8080", r)
 }

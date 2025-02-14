@@ -19,7 +19,7 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 func (h *UserHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
 	var req models.AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		writeErrorResponse(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -30,10 +30,17 @@ func (h *UserHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.userService.Authenticate(&authReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+}
+
+// writeErrorResponse - вспомогательная функция для отправки ошибки
+func writeErrorResponse(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(models.ErrorResponse{Errors: message})
 }

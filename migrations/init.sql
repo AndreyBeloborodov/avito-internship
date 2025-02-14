@@ -6,14 +6,14 @@ CREATE TABLE IF NOT EXISTS users (
     );
 
 -- Создаем таблицу мерча
-CREATE TABLE IF NOT EXISTS merch (
+CREATE TABLE IF NOT EXISTS merches (
                                      id SERIAL PRIMARY KEY,
                                      name VARCHAR(255) UNIQUE NOT NULL,
     price INT NOT NULL CHECK (price > 0)
     );
 
 -- Заполняем таблицу мерча начальными данными
-INSERT INTO merch (name, price) VALUES
+INSERT INTO merches (name, price) VALUES
                                     ('t-shirt', 80),
                                     ('cup', 20),
                                     ('book', 50),

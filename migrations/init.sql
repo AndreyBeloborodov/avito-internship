@@ -39,6 +39,6 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS purchases (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id),
-    merch_id INT REFERENCES merch(id) ON DELETE CASCADE,
+    merch_id INT REFERENCES merches(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -7,8 +7,6 @@ import (
 	"merch-shop/internal/errs"
 	"merch-shop/internal/models"
 	"merch-shop/internal/repositories"
-	"net/http"
-	"strings"
 	"time"
 )
 
@@ -60,19 +58,8 @@ func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthRespons
 }
 
 // ExtractUsernameFromToken разбирает токен, проверяет его валидность и возвращает username
-func (s *UserService) ExtractUsernameFromToken(r *http.Request) (string, error) {
-
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return "", errors.New("missing Authorization header")
-	}
-
-	// Ожидаем формат "Bearer <token>"
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Разбираем токен и проверяем подпись
+func (s *UserService) ExtractUsernameFromToken(tokenString string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Проверяем метод подписи
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -83,19 +70,16 @@ func (s *UserService) ExtractUsernameFromToken(r *http.Request) (string, error) 
 		return "", errors.New("invalid token")
 	}
 
-	// Извлекаем claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return "", errors.New("invalid token claims")
 	}
 
-	// Получаем username
 	username, ok := claims["username"].(string)
 	if !ok {
 		return "", errors.New("username not found in token")
 	}
 
-	// Проверяем срок действия токена (exp в формате Unix timestamp)
 	exp, ok := claims["exp"].(float64)
 	if !ok {
 		return "", errors.New("invalid expiration time")
@@ -105,13 +89,11 @@ func (s *UserService) ExtractUsernameFromToken(r *http.Request) (string, error) 
 		return "", errors.New("token expired")
 	}
 
-	// Проверяем, существует ли пользователь в БД
 	user, err := s.userRepo.GetUserByUsername(username)
 	if err != nil || user == nil {
 		return "", errs.ErrUserNotFound
 	}
 
-	// Токен валиден, пользователь существует
 	return username, nil
 }
 

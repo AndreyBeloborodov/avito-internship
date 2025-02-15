@@ -1,17 +1,23 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
 	"merch-shop/internal/handlers"
+	"merch-shop/internal/middleware"
 	"merch-shop/internal/models"
 	"merch-shop/internal/repositories"
 	"merch-shop/internal/services"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -47,9 +53,43 @@ func main() {
 	// Инициализация роутеров
 	r := mux.NewRouter()
 	r.HandleFunc("/api/auth", userHandler.Authenticate).Methods("POST")
-	r.HandleFunc("/api/buy/{item}", shopHandler.BuyItem).Methods("GET")
-	r.HandleFunc("/api/sendCoin", shopHandler.SendCoin).Methods("GET")
-	r.HandleFunc("/api/info", shopHandler.GetUserInfo).Methods("GET")
 
-	http.ListenAndServe(":8080", r)
+	protectedRoutes := r.PathPrefix("/api").Subrouter()
+	protectedRoutes.Use(middleware.AuthMiddleware(userService))
+
+	protectedRoutes.HandleFunc("/buy/{item}", shopHandler.BuyItem).Methods("GET")
+	protectedRoutes.HandleFunc("/sendCoin", shopHandler.SendCoin).Methods("GET")
+	protectedRoutes.HandleFunc("/info", shopHandler.GetUserInfo).Methods("GET")
+
+	// Создаём сервер
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
+
+	// Канал для сигналов завершения
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// Запуск сервера в отдельной горутине
+	go func() {
+		log.Println("Starting server on :8080")
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server failed: %v", err)
+		}
+	}()
+
+	// Ожидание сигнала завершения
+	<-stop
+	log.Println("Shutting down server...")
+
+	// Создаём контекст с таймаутом для graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exited properly")
 }

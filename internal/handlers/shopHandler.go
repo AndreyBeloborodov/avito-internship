@@ -22,14 +22,13 @@ func NewShopHandler(userService *services.UserService, merchService *services.Me
 
 // BuyItem - обработчик покупки предмета
 func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
-	// Получаем имя предмета из URL
 	vars := mux.Vars(r)
 	merchName := vars["item"]
 
-	// Достаём username из токена
-	username, err := h.userService.ExtractUsernameFromToken(r)
-	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
+	// Достаём username из контекста
+	username, ok := r.Context().Value("username").(string)
+	if !ok {
+		writeErrorResponse(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -40,20 +39,17 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.userService.BuyMerch(username, merch)
-
 	switch {
 	case errors.Is(err, errs.ErrUserNotFound):
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
 	case errors.Is(err, errs.ErrNotEnoughCoins):
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
-		log.Println("failed to buy merch: ", err)
-		return
+	default:
+		if err != nil {
+			writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			log.Println("failed to buy merch: ", err)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -62,43 +58,40 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 
 // SendCoin - обработчик отправки монет другому пользователю
 func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
+	// Декодируем JSON-запрос
 	var sendCoinRequest models.SendCoinRequest
 	if err := json.NewDecoder(r.Body).Decode(&sendCoinRequest); err != nil {
 		writeErrorResponse(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Достаём username из токена
-	username, err := h.userService.ExtractUsernameFromToken(r)
-	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
+	// Получаем username из контекста
+	username, ok := r.Context().Value("username").(string)
+	if !ok {
+		writeErrorResponse(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
+	// Нельзя отправлять монеты самому себе
 	if username == sendCoinRequest.ToUser {
 		writeErrorResponse(w, "You can't send coins to yourself.", http.StatusBadRequest)
 		return
 	}
 
-	err = h.userService.SendCoin(username, sendCoinRequest)
+	// Вызываем сервис для отправки монет
+	err := h.userService.SendCoin(username, sendCoinRequest)
 
 	switch {
-	case errors.Is(err, errs.ErrUserNotFound):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
-	case errors.Is(err, errs.ErrNegativeCoins):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
-	case errors.Is(err, errs.ErrNotEnoughCoins):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
-	case errors.Is(err, errs.ErrSendCoinsToYourself):
+	case errors.Is(err, errs.ErrUserNotFound),
+		errors.Is(err, errs.ErrNegativeCoins),
+		errors.Is(err, errs.ErrNotEnoughCoins),
+		errors.Is(err, errs.ErrSendCoinsToYourself):
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 		log.Println("failed to send coins: ", err)
 		return
 	}
@@ -109,10 +102,10 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 
 // GetUserInfo - обработчик получения информации о монетах, инвентаре и истории транзакций
 func (h *ShopHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем username из токена
-	username, err := h.userService.ExtractUsernameFromToken(r)
-	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
+	// Получаем username из контекста
+	username, ok := r.Context().Value("username").(string)
+	if !ok {
+		writeErrorResponse(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 

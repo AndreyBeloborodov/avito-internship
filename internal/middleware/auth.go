@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"context"
+	"log"
+	"merch-shop/internal/handlers"
 	"merch-shop/internal/services"
 	"net/http"
 	"strings"
@@ -13,7 +15,7 @@ func AuthMiddleware(userService *services.UserService) func(http.Handler) http.H
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "missing Authorization header", http.StatusUnauthorized)
+				handlers.WriteErrorResponse(w, "missing Authorization header", http.StatusUnauthorized)
 				return
 			}
 
@@ -21,7 +23,8 @@ func AuthMiddleware(userService *services.UserService) func(http.Handler) http.H
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 			username, err := userService.ExtractUsernameFromToken(tokenString)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				handlers.WriteErrorResponse(w, "invalid token", http.StatusUnauthorized)
+				log.Println("failed extract username from token ", err)
 				return
 			}
 

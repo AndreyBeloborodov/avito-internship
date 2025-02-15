@@ -28,17 +28,17 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 	// Достаём username из контекста
 	username, ok := r.Context().Value("username").(string)
 	if !ok {
-		writeErrorResponse(w, "unauthorized", http.StatusUnauthorized)
+		WriteErrorResponse(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	merch, err := h.merchService.GetMerchByName(merchName)
 	switch {
 	case errors.Is(err, errs.ErrMerchNotFound):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		WriteErrorResponse(w, err.Error(), http.StatusBadRequest)
 	default:
 		if err != nil {
-			writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+			WriteErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 			log.Println("failed to buy merch: ", err)
 			return
 		}
@@ -47,12 +47,12 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 	err = h.userService.BuyMerch(username, merch)
 	switch {
 	case errors.Is(err, errs.ErrUserNotFound):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		WriteErrorResponse(w, err.Error(), http.StatusBadRequest)
 	case errors.Is(err, errs.ErrNotEnoughCoins):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		WriteErrorResponse(w, err.Error(), http.StatusBadRequest)
 	default:
 		if err != nil {
-			writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+			WriteErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 			log.Println("failed to buy merch: ", err)
 			return
 		}
@@ -67,20 +67,20 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 	// Декодируем JSON-запрос
 	var sendCoinRequest models.SendCoinRequest
 	if err := json.NewDecoder(r.Body).Decode(&sendCoinRequest); err != nil {
-		writeErrorResponse(w, "Invalid request body", http.StatusBadRequest)
+		WriteErrorResponse(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	// Получаем username из контекста
 	username, ok := r.Context().Value("username").(string)
 	if !ok {
-		writeErrorResponse(w, "Unauthorized", http.StatusUnauthorized)
+		WriteErrorResponse(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	// Нельзя отправлять монеты самому себе
 	if username == sendCoinRequest.ToUser {
-		writeErrorResponse(w, "You can't send coins to yourself.", http.StatusBadRequest)
+		WriteErrorResponse(w, "You can't send coins to yourself.", http.StatusBadRequest)
 		return
 	}
 
@@ -92,12 +92,12 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 		errors.Is(err, errs.ErrNegativeCoins),
 		errors.Is(err, errs.ErrNotEnoughCoins),
 		errors.Is(err, errs.ErrSendCoinsToYourself):
-		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		WriteErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
-		writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+		WriteErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 		log.Println("failed to send coins: ", err)
 		return
 	}
@@ -111,14 +111,14 @@ func (h *ShopHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	// Получаем username из контекста
 	username, ok := r.Context().Value("username").(string)
 	if !ok {
-		writeErrorResponse(w, "Unauthorized", http.StatusUnauthorized)
+		WriteErrorResponse(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	// Получаем информацию о пользователе
 	info, err := h.userService.GetUserInfo(username)
 	if err != nil {
-		writeErrorResponse(w, "Failed to fetch user info", http.StatusInternalServerError)
+		WriteErrorResponse(w, "Failed to fetch user info", http.StatusInternalServerError)
 		log.Println("failed to get user info:", err)
 		return
 	}

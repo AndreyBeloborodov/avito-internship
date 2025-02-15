@@ -16,10 +16,10 @@ var jwtSecret = []byte("key-1848237283829139213")
 
 // UserService - сервис для работы с пользователями
 type UserService struct {
-	userRepo *repositories.UserRepo
+	userRepo repositories.UserRepository
 }
 
-func NewUserService(repo *repositories.UserRepo) *UserService {
+func NewUserService(repo repositories.UserRepository) *UserService {
 	return &UserService{userRepo: repo}
 }
 
@@ -146,6 +146,9 @@ func (s *UserService) SendCoin(username string, req models.SendCoinRequest) erro
 	// Проверяем, хватает ли монет у отправителя
 	if fromUser.Coins < req.Amount {
 		return errs.ErrNotEnoughCoins
+	}
+	if fromUser.Username == toUser.Username {
+		return errs.ErrSendCoinsToYourself
 	}
 	// оправляем монеты
 	return s.userRepo.SendCoin(fromUser, toUser, req.Amount)

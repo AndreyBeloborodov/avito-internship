@@ -75,6 +75,11 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if username == sendCoinRequest.ToUser {
+		writeErrorResponse(w, "You can't send coins to yourself.", http.StatusBadRequest)
+		return
+	}
+
 	err = h.userService.SendCoin(username, sendCoinRequest)
 
 	switch {
@@ -85,6 +90,9 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	case errors.Is(err, errs.ErrNotEnoughCoins):
+		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
+		return
+	case errors.Is(err, errs.ErrSendCoinsToYourself):
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
 		return
 	}

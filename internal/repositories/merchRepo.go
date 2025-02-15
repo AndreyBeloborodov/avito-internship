@@ -1,10 +1,13 @@
 package repositories
 
 import (
-	"errors"
 	"gorm.io/gorm"
 	"merch-shop/internal/models"
 )
+
+type MerchRepository interface {
+	GetMerchByName(name string) (*models.Merch, error)
+}
 
 // MerchRepo - структура для работы с базой данных
 type MerchRepo struct {
@@ -18,7 +21,7 @@ func NewMerchRepo(db *gorm.DB) *MerchRepo {
 func (r *MerchRepo) GetMerchByName(name string) (*models.Merch, error) {
 	var merch models.Merch
 	if err := r.db.Where("name = ?", name).First(&merch).Error; err != nil {
-		return nil, errors.New("item not found")
+		return nil, err
 	}
 	return &merch, nil
 }

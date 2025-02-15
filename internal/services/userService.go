@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 	"merch-shop/internal/errs"
 	"merch-shop/internal/models"
 	"merch-shop/internal/repositories"
@@ -25,22 +26,24 @@ func NewUserService(repo repositories.UserRepository) *UserService {
 func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthResponse, error) {
 	// Проверяем, есть ли пользователь в базе
 	user, err := s.userRepo.GetUserByUsername(req.Username)
-	if err != nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// Если пользователя нет в базе, создаём нового
-		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		hashedPassword, _ := GetHashPassword(req.Password)
 		user = &models.User{
 			Username: req.Username,
 			Password: string(hashedPassword),
 			Coins:    1000, // Начальные монеты
 		}
 		if err = s.userRepo.CreateUser(user); err != nil {
-			return nil, errors.New("could not create user")
+			return nil, errs.ErrCreateUser
 		}
-	} else {
+	} else if err == nil && user != nil {
 		// Если пользователь найден, проверяем пароль
 		if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 			return nil, errs.ErrInvalidPassword
 		}
+	} else {
+		return nil, errs.ErrInternalServer
 	}
 
 	// Генерируем JWT токен
@@ -55,6 +58,11 @@ func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthRespons
 	}
 
 	return &models.AuthResponse{Token: tokenString}, nil
+}
+
+func GetHashPassword(pass string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	return string(hash), err
 }
 
 // ExtractUsernameFromToken разбирает токен, проверяет его валидность и возвращает username
@@ -100,9 +108,16 @@ func (s *UserService) ExtractUsernameFromToken(tokenString string) (string, erro
 // BuyMerch - обработка покупки предмета
 func (s *UserService) BuyMerch(username string, merch *models.Merch) error {
 	user, err := s.userRepo.GetUserByUsername(username)
-	if err != nil || user == nil {
-		return errs.ErrUserNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.ErrUserNotFound
+		}
+		return errs.ErrInternalServer
 	}
+	if user == nil {
+		return errs.ErrInternalServer
+	}
+
 	// Проверяем, хватает ли монет
 	if user.Coins < merch.Price {
 		return errs.ErrNotEnoughCoins
@@ -114,13 +129,27 @@ func (s *UserService) BuyMerch(username string, merch *models.Merch) error {
 // SendCoin - обработка отправки монет другому пользователю
 func (s *UserService) SendCoin(username string, req models.SendCoinRequest) error {
 	fromUser, err := s.userRepo.GetUserByUsername(username)
-	if err != nil || fromUser == nil {
-		return errs.ErrUserNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.ErrUserNotFound
+		}
+		return errs.ErrInternalServer
 	}
+	if fromUser == nil {
+		return errs.ErrInternalServer
+	}
+
 	toUser, err := s.userRepo.GetUserByUsername(req.ToUser)
-	if err != nil || toUser == nil {
-		return errs.ErrUserNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.ErrUserNotFound
+		}
+		return errs.ErrInternalServer
 	}
+	if toUser == nil {
+		return errs.ErrInternalServer
+	}
+
 	// проверяем что количество монет положительное
 	if req.Amount <= 0 {
 		return errs.ErrNegativeCoins
@@ -139,8 +168,14 @@ func (s *UserService) SendCoin(username string, req models.SendCoinRequest) erro
 // GetUserInfo - получает информацию о пользователе (баланс, инвентарь, историю транзакций)
 func (s *UserService) GetUserInfo(username string) (*models.InfoResponse, error) {
 	user, err := s.userRepo.GetUserByUsername(username)
-	if err != nil || user == nil {
-		return nil, errs.ErrUserNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrUserNotFound
+		}
+		return nil, errs.ErrInternalServer
+	}
+	if user == nil {
+		return nil, errs.ErrInternalServer
 	}
 
 	// Получаем инвентарь пользователя

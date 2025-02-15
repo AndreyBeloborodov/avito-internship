@@ -33,9 +33,15 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	merch, err := h.merchService.GetMerchByName(merchName)
-	if err != nil {
+	switch {
+	case errors.Is(err, errs.ErrMerchNotFound):
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
+	default:
+		if err != nil {
+			writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+			log.Println("failed to buy merch: ", err)
+			return
+		}
 	}
 
 	err = h.userService.BuyMerch(username, merch)

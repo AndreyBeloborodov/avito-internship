@@ -33,12 +33,12 @@ func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthRespons
 			Password: string(hashedPassword),
 			Coins:    1000, // Начальные монеты
 		}
-		if err := s.userRepo.CreateUser(user); err != nil {
+		if err = s.userRepo.CreateUser(user); err != nil {
 			return nil, errors.New("could not create user")
 		}
 	} else {
 		// Если пользователь найден, проверяем пароль
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 			return nil, errs.ErrInvalidPassword
 		}
 	}

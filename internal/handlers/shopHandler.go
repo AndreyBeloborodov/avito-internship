@@ -46,7 +46,7 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 		writeErrorResponse(w, err.Error(), http.StatusBadRequest)
 	default:
 		if err != nil {
-			writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+			writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
 			log.Println("failed to buy merch: ", err)
 			return
 		}

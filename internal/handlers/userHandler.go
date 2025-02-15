@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"merch-shop/internal/errs"
 	"merch-shop/internal/models"
 	"merch-shop/internal/services"
@@ -31,7 +32,8 @@ func (h *UserHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		writeErrorResponse(w, err.Error(), http.StatusInternalServerError)
+		writeErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+		log.Println("Failed authenticate: ", err)
 		return
 	}
 

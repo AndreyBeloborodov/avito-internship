@@ -98,3 +98,26 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("The coins were sent successfully"))
 }
+
+// GetUserInfo - обработчик получения информации о монетах, инвентаре и истории транзакций
+func (h *ShopHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем username из токена
+	username, err := h.userService.ExtractUsernameFromToken(r)
+	if err != nil {
+		writeErrorResponse(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// Получаем информацию о пользователе
+	info, err := h.userService.GetUserInfo(username)
+	if err != nil {
+		writeErrorResponse(w, "Failed to fetch user info", http.StatusInternalServerError)
+		log.Println("failed to get user info:", err)
+		return
+	}
+
+	// Отправляем JSON-ответ
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(info)
+}

@@ -49,6 +49,7 @@ func main() {
 	r.HandleFunc("/api/auth", userHandler.Authenticate).Methods("POST")
 	r.HandleFunc("/api/buy/{item}", shopHandler.BuyItem).Methods("GET")
 	r.HandleFunc("/api/sendCoin", shopHandler.SendCoin).Methods("GET")
+	r.HandleFunc("/api/info", shopHandler.GetUserInfo).Methods("GET")
 
 	http.ListenAndServe(":8080", r)
 }

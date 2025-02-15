@@ -88,3 +88,43 @@ func (r *UserRepo) SendCoin(fromUser, toUser *models.User, amount int) error {
 		return nil
 	})
 }
+
+// GetUserInventory - получает список предметов в инвентаре пользователя
+func (r *UserRepo) GetUserInventory(userID uint) ([]models.Item, error) {
+	var items []models.Item
+	err := r.db.Raw(`
+		SELECT m.name AS type, COUNT(p.merch_id) AS quantity
+		FROM purchases p
+		JOIN merches m ON p.merch_id = m.id
+		WHERE p.user_id = ?
+		GROUP BY m.name
+	`, userID).Scan(&items).Error
+
+	return items, err
+}
+
+// GetCoinHistory - получает историю отправленных и полученных монет
+func (r *UserRepo) GetCoinHistory(userID uint) (models.CoinHistory, error) {
+	var history models.CoinHistory
+
+	// Получаем полученные монеты
+	err := r.db.Raw(`
+		SELECT u.username AS from_user, t.amount
+		FROM transactions t
+		JOIN users u ON t.sender_id = u.id
+		WHERE t.receiver_id = ?
+	`, userID).Scan(&history.Received).Error
+	if err != nil {
+		return history, err
+	}
+
+	// Получаем отправленные монеты
+	err = r.db.Raw(`
+		SELECT u.username AS to_user, t.amount
+		FROM transactions t
+		JOIN users u ON t.receiver_id = u.id
+		WHERE t.sender_id = ?
+	`, userID).Scan(&history.Sent).Error
+
+	return history, err
+}

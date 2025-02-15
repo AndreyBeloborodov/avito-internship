@@ -150,3 +150,31 @@ func (s *UserService) SendCoin(username string, req models.SendCoinRequest) erro
 	// оправляем монеты
 	return s.userRepo.SendCoin(fromUser, toUser, req.Amount)
 }
+
+// GetUserInfo - получает информацию о пользователе (баланс, инвентарь, историю транзакций)
+func (s *UserService) GetUserInfo(username string) (*models.InfoResponse, error) {
+	user, err := s.userRepo.GetUserByUsername(username)
+	if err != nil || user == nil {
+		return nil, errs.ErrUserNotFound
+	}
+
+	// Получаем инвентарь пользователя
+	inventory, err := s.userRepo.GetUserInventory(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем историю транзакций
+	coinHistory, err := s.userRepo.GetCoinHistory(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	info := &models.InfoResponse{
+		Coins:       user.Coins,
+		Inventory:   inventory,
+		CoinHistory: coinHistory,
+	}
+
+	return info, nil
+}

@@ -10,11 +10,6 @@ import (
 	"strings"
 )
 
-type ContextKey string
-
-// Определяем ключ для использования в контексте
-const usernameKey ContextKey = "username"
-
 // AuthMiddleware проверяет токен и передаёт username в контекст запроса.
 func AuthMiddleware(userService *services.UserService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -36,7 +31,7 @@ func AuthMiddleware(userService *services.UserService) func(http.Handler) http.H
 
 			// Добавляем username в контекст запроса
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, usernameKey, username)
+			ctx = context.WithValue(ctx, "username", username)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

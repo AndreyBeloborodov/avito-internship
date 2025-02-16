@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
@@ -21,6 +22,12 @@ import (
 )
 
 func main() {
+	// Загрузить переменные окружения из .env файла
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// Читаем переменные окружения
 	host := os.Getenv("DATABASE_HOST")
 	user := os.Getenv("DATABASE_USER")

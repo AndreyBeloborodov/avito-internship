@@ -1,0 +1,42 @@
+# Включает все рекомендуемые линтеры
+linters:
+  enable:
+    - govet          # Анализирует код и выявляет потенциальные ошибки
+    - staticcheck    # Продвинутый анализатор кода
+    - gosimple       # Упрощает код
+    - unused         # Проверяет неиспользуемые переменные и функции
+    - errcheck       # Проверяет, обрабатываются ли ошибки
+    - revive         # Улучшенная версия golint
+    - ineffassign    # Находит неиспользуемые присваивания
+    - typecheck      # Проверяет типы
+
+# Игнорируемые файлы и каталоги
+linters-settings:
+  errcheck:
+    exclude-functions: ["os:Close", "io:Close"]  # Игнорируем ошибки закрытия файлов
+  staticcheck:
+    checks: ["all"]  # Включаем все проверки Staticcheck
+  revive:
+    ignore-generated-header: true  # Игнорируем файлы с "// Code generated ... DO NOT EDIT."
+
+# Настройки линтинга
+issues:
+  max-issues-per-linter: 50        # Ограничиваем число сообщений от одного линтера
+  max-same-issues: 5               # Ограничиваем повторяющиеся ошибки
+  exclude-use-default: false       # Используем встроенные исключения
+  exclude-dirs:
+    - "vendor"                     # Пропускаем зависимости в vendor/
+    - "third_party"
+  exclude-files:
+    - "mock_.*\\.go"               # Пропускаем файлы с моками
+
+# Настройки форматирования кода
+output:
+  formats:
+    - format: colored-line-number  # Формат вывода (можно json, tab, checkstyle)
+      print-issued-lines: true      # Показывать строки с ошибками
+      print-linter-name: true       # Показывать, какой линтер нашел ошибку
+
+# Настройки времени выполнения
+run:
+  timeout: 3m                       # Максимальное время выполнения — 3 минуты

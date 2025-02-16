@@ -36,9 +36,10 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case errors.Is(err, errs.ErrMerchNotFound):
 		WriteErrorResponse(w, err.Error(), http.StatusBadRequest)
+		return
 	default:
 		if err != nil {
-			WriteErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+			WriteErrorResponse(w, errs.ErrInternalServer.Error(), http.StatusInternalServerError)
 			log.Println("failed to buy merch: ", err)
 			return
 		}
@@ -52,14 +53,17 @@ func (h *ShopHandler) BuyItem(w http.ResponseWriter, r *http.Request) {
 		WriteErrorResponse(w, err.Error(), http.StatusBadRequest)
 	default:
 		if err != nil {
-			WriteErrorResponse(w, "Internal server error", http.StatusInternalServerError)
+			WriteErrorResponse(w, errs.ErrInternalServer.Error(), http.StatusInternalServerError)
 			log.Println("failed to buy merch: ", err)
 			return
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("merch successfully purchased"))
+	if _, err = w.Write([]byte("merch successfully purchased")); err != nil {
+		WriteErrorResponse(w, errs.ErrInternalServer.Error(), http.StatusInternalServerError)
+		log.Printf("Error writing response: %v", err)
+	}
 }
 
 // SendCoin - обработчик отправки монет другому пользователю
@@ -103,7 +107,10 @@ func (h *ShopHandler) SendCoin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("The coins were sent successfully"))
+	if _, err = w.Write([]byte("merch successfully purchased")); err != nil {
+		WriteErrorResponse(w, errs.ErrInternalServer.Error(), http.StatusInternalServerError)
+		log.Printf("Error writing response: %v", err)
+	}
 }
 
 // GetUserInfo - обработчик получения информации о монетах, инвентаре и истории транзакций
@@ -126,5 +133,9 @@ func (h *ShopHandler) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	// Отправляем JSON-ответ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(info)
+	if err = json.NewEncoder(w).Encode(info); err != nil {
+		WriteErrorResponse(w, errs.ErrInternalServer.Error(), http.StatusInternalServerError)
+		log.Printf("Error encoding response to JSON: %v", err)
+	}
+
 }

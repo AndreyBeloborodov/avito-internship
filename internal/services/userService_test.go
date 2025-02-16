@@ -95,6 +95,8 @@ func TestSendCoin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockRepo := mocks.NewUserRepository(t)
 			service := UserService{userRepo: mockRepo}
 
@@ -172,6 +174,8 @@ func TestBuyMerch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockRepo := mocks.NewUserRepository(t)
 			service := UserService{userRepo: mockRepo}
 
@@ -261,6 +265,8 @@ func TestGetUserInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockRepo := mocks.NewUserRepository(t)
 			service := UserService{userRepo: mockRepo}
 
@@ -340,6 +346,8 @@ func TestAuthenticate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockRepo := mocks.NewUserRepository(t)
 			service := UserService{userRepo: mockRepo}
 

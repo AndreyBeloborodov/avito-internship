@@ -31,7 +31,7 @@ func (s *UserService) Authenticate(req *models.AuthRequest) (*models.AuthRespons
 		hashedPassword, _ := GetHashPassword(req.Password)
 		user = &models.User{
 			Username: req.Username,
-			Password: string(hashedPassword),
+			Password: hashedPassword,
 			Coins:    1000, // Начальные монеты
 		}
 		if err = s.userRepo.CreateUser(user); err != nil {

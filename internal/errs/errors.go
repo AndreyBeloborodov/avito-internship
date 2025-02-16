@@ -17,3 +17,5 @@ var ErrSendCoinsToYourself = errors.New("you can't send coins to yourself")
 var ErrInternalServer = errors.New("internal server error")
 
 var ErrCreateUser = errors.New("could not create user")
+
+var ErrInvalidToken = errors.New("invalid token")

@@ -26,12 +26,12 @@ func main() {
 	user := os.Getenv("DATABASE_USER")
 	password := os.Getenv("DATABASE_PASSWORD")
 	dbname := os.Getenv("DATABASE_NAME")
-	port := os.Getenv("DATABASE_PORT")
+	dbPort := os.Getenv("DATABASE_PORT")
+	serverPort := os.Getenv("SERVER_PORT")
 
 	// Формируем DSN
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		host, user, password, dbname, port)
-	fmt.Println(dsn)
+		host, user, password, dbname, dbPort)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -58,12 +58,12 @@ func main() {
 	protectedRoutes.Use(middleware.AuthMiddleware(userService))
 
 	protectedRoutes.HandleFunc("/buy/{item}", shopHandler.BuyItem).Methods("GET")
-	protectedRoutes.HandleFunc("/sendCoin", shopHandler.SendCoin).Methods("GET")
+	protectedRoutes.HandleFunc("/sendCoin", shopHandler.SendCoin).Methods("POST")
 	protectedRoutes.HandleFunc("/info", shopHandler.GetUserInfo).Methods("GET")
 
 	// Создаём сервер
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    serverPort,
 		Handler: r,
 	}
 
@@ -73,7 +73,7 @@ func main() {
 
 	// Запуск сервера в отдельной горутине
 	go func() {
-		log.Println("Starting server on :8080")
+		log.Println("Starting server on " + serverPort)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Server failed: %v", err)
 		}

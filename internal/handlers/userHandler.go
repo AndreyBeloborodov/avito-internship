@@ -38,12 +38,18 @@ func (h *UserHandler) Authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if err = json.NewEncoder(w).Encode(resp); err != nil {
+		WriteErrorResponse(w, errs.ErrInternalServer.Error(), http.StatusInternalServerError)
+		log.Printf("Error encoding response to JSON: %v", err)
+	}
 }
 
 // WriteErrorResponse - вспомогательная функция для отправки ошибки
 func WriteErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(models.ErrorResponse{Errors: message})
+	if err := json.NewEncoder(w).Encode(models.ErrorResponse{Errors: message}); err != nil {
+		log.Printf("Error encoding response to JSON: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
